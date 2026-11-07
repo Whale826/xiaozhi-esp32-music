@@ -481,6 +481,50 @@ std::string Esp32Music::GetDownloadResult()
     return last_downloaded_data_;
 }
 
+// 按直链播放：跳过作者曲库，直接用外部传入的音频地址
+bool Esp32Music::PlayUrl(const std::string &title, const std::string &audio_url, const std::string &lyric_url)
+{
+    if (audio_url.empty())
+    {
+        ESP_LOGE(TAG, "PlayUrl: audio_url is empty");
+        return false;
+    }
+
+    current_song_name_ = title;
+    current_music_url_ = audio_url;
+    song_name_displayed_ = false;
+    current_lyric_url_ = lyric_url;
+
+    ESP_LOGI(TAG, "PlayUrl: %s -> %s", title.c_str(), audio_url.c_str());
+
+    if (!StartStreaming(audio_url))
+    {
+        return false;
+    }
+
+    if (!lyric_url.empty() && display_mode_ == DISPLAY_MODE_LYRICS)
+    {
+        if (is_lyric_running_)
+        {
+            is_lyric_running_ = false;
+            if (lyric_thread_.joinable())
+            {
+                lyric_thread_.join();
+            }
+        }
+
+        {
+            std::lock_guard<std::mutex> lock(lyrics_mutex_);
+            lyrics_.clear();
+        }
+        current_lyric_index_ = -1;
+        is_lyric_running_ = true;
+        lyric_thread_ = std::thread(&Esp32Music::LyricDisplayThread, this);
+    }
+
+    return true;
+}
+
 // 开始流式播放
 bool Esp32Music::StartStreaming(const std::string &music_url)
 {

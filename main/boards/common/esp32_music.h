@@ -102,6 +102,9 @@ public:
     virtual size_t GetBufferSize() const override { return buffer_size_; }
     virtual bool IsDownloading() const override { return is_downloading_; }
     virtual int16_t* GetAudioData() override { return final_pcm_data_fft; }
+
+    // 按直链播放（供 MCP 工具 self.music.play_url 使用）
+    bool PlayUrl(const std::string& title, const std::string& audio_url, const std::string& lyric_url);
     
     // 显示模式控制方法
     void SetDisplayMode(DisplayMode mode);

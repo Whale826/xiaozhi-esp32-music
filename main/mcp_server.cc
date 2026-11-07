@@ -130,7 +130,34 @@
                  return "{\"success\": true, \"message\": \"音乐开始播放\"}";
              });
  
-         AddTool("self.music.set_display_mode",
+         AddTool("self.music.play_url",
+            "播放任意音频直链（mp3）。当你手上已经有 audio_url（例如调用 search_song 或 play_song 工具后拿到的那种链接）时，必须用这个工具播放，不要用 play_song。\n"
+            "参数:\n"
+            "  `title`: 歌曲标题（用于屏幕显示）。\n"
+            "  `audio_url`: 音频文件的完整直链地址（http/https，通常是 mp3）。\n"
+            "  `lyric_url`: 歌词文件的完整地址（可选，LRC 格式；没有就传空字符串）。\n"
+            "返回:\n"
+            "  播放状态信息，不需确认，立刻播放。",
+            PropertyList({
+                Property("title", kPropertyTypeString),
+                Property("audio_url", kPropertyTypeString),
+                Property("lyric_url", kPropertyTypeString, "")
+            }),
+            [music](const PropertyList& properties) -> ReturnValue {
+                auto title = properties["title"].value<std::string>();
+                auto audio_url = properties["audio_url"].value<std::string>();
+                auto lyric_url = properties["lyric_url"].value<std::string>();
+
+                ESP_LOGI(TAG, "play_url: title=%s url=%s", title.c_str(), audio_url.c_str());
+
+                auto esp32_music = static_cast<Esp32Music*>(music);
+                if (!esp32_music->PlayUrl(title, audio_url, lyric_url)) {
+                    return "{\"success\": false, \"message\": \"URL 播放失败\"}";
+                }
+                return "{\"success\": true, \"message\": \"开始播放\"}";
+            });
+
+        AddTool("self.music.set_display_mode",
              "设置音乐播放时的显示模式。可以选择显示频谱或歌词，比如用户说‘打开频谱’或者‘显示频谱’，‘打开歌词’或者‘显示歌词’就设置对应的显示模式。\n"
              "参数:\n"
              "  `mode`: 显示模式，可选值为 'spectrum'（频谱）或 'lyrics'（歌词）。\n"
